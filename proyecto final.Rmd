@@ -1,0 +1,252 @@
+---
+title: "Proyecto final curso lenguaje R 2020 "
+author: "Agustín Díaz"
+
+output: html_document
+---
+<style type="text/css">
+
+body, td {
+   font-size: 18px;
+}
+code.r{
+  font-size: 13px;
+}
+pre {
+  font-size: 13px
+}
+</style>
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Condición corporal de *Turdus rufiventris* en contexto de invasión de la exótica leñosa *Pyracantha angustifolia*: estudio de caso en el Chaco Serrano de Córdoba(Argentina).   
+
+
+###Antecedentes   
+Las invasiones biológicas son uno de los factores más importantes de modificación de los ecosistemas ya que pueden alterar el ciclo de nutrientes, la productividad primaria,la hidrología de los ecosistemas nativos e incluso modificar la composición y estructura de comunidades (Pimentel *et al*, 2005). En muchos casos la invasión de especies exóticas a un sistema es acompañada por la formación de mutualismos con otras especies exóticas o nativas que facilitan su permanéncia y dispersión. Algunos autores han sugerido que las invasiones de algunas plantas exóticas podrían beneficiar a especies nativas, por ejemplo en el caso de brindar a otras especies (e.g. animales) algún recurso no disponible en el sistema que pudiera beneficiar a los individuos que lo consuman (Richardson *et al*, 2000). Los beneficios que la fauna nativa le provee a las plantas exóticas ha sido bien documentada por la bibliografía, sin embargo los beneficios que las plantas les proveen a la fauna mediante el establecimiento de interacciones es poco cononocido.   
+*Pyracantha angustifolia*  es una planta leñosa nativa del sudeste de Asia que fue introducida en el centro de Argentina con fines ornamentales a comienzos del siglo XX. En la actualidad la especie se está expandiendo en los bosques serranos de la provincia de Córdoba, incluso en áreas poco disturbadas (Gurvich *et al*, 2005). Su fructificación se extiende desde principios de otoño hasta fines del invierno, contrastando con el ciclo de fructificación de la flora nativa que lo hace principalmente en la temporada estival. Sus frutos carnosos representan un abundante recurso alimenticio, ampliamente consumido por aves frugivoras nativas como *Turdus rufiventris* y *Turudus chguanco* durante épocas del año en que otros recursos son escasos (Tecco *et al*, 2010. La preséncia en el ecosistema de un recurso exótico que ofrezca nutrientes y compuestos esenciales cuando especies nativas no lo hacen, podría alterar drásticamente la dieta de las aves frugívoras de la zona, con un significativo efecto en su condición corporal.   
+Este trabajo se propone dilucidar si existen diferencias en cuanto a la condicion corporal de individuos del género *Turdus* en sitios invadidos por *Pyracantha angustifolia* durante el invierno y finales de la primavera, periodos del año donde los frutos de plantas nativas son escasos en el Chaco Serrano de Córdoba y coincidente con el pico de frutificación de la exótica. Como control, se analizaron las mismas variables de condición corporal en *Turdus* de sitios no invadidos por *Pyracantha angustifolia*.   
+En sitios **2 invadidos y 2 no invadidos** por *P. angustifolia* se muestrearon 147 individuos de dos especies del género *Turdus* (*T. rufiventris* y *T. chiguanco*) durante el **Invierno y Primavera** del año 2018. Mediante redes de niebla se capturó y se les asignó un puntaje de **acumulación de grasa ventral** en un rango de 1 (poca acumulación) a 5 (grasa muy visible, pecho y vientre amarillento blanquecina). Además se les asignó un **puntaje de desarrollo de músculo pectoral** entre 1 (fúrcula saliente, pectoral cóncavo) y 3 (fúrcula poco visible, pectoral convexo).   
+Como variables complementarias de desarrollo y condición corporal se **peso** a cada individuo mediante una pesola de resorte, se midió el **largo de los tarsos** usando calibre electrónico y se exploró el cuerpo de busca de **ectoparásitos**, asignándoles un puntaje de 1 (hasta 10 ectoparásitos) a 3 (> 30 ectoparásitos).
+Variables dependientes: Acumulación de grasa o desarrollo de músculo.   
+
+**Variables independientes**: Sitio (Invadido y No invadido) + Periodo (Invierno, Primavera) + largo del tarso + peso + parásitos.   
+
+**Códigos en tabla**: site (Inv/Ninv) + season (Winter/Spring) + tright + tleft + weight + parasites.
+
+##Preparación de los datos
+```{r Tablas y preparación, echo=TRUE, eval=TRUE, cache=TRUE}
+corpo <- read.table("C:/Users/Mitocondria asesina/Desktop/Tesis/Condicion corpo 2020/corpo.txt", header=TRUE, stringsAsFactors = T)
+View(corpo)
+str(corpo)
+as.double(as.character(corpo$weight)) -> corpo$weight
+as.double(as.character(corpo$tright)) -> corpo$tright
+as.double(as.character(corpo$tleft)) -> corpo$tleft
+as.factor(as.character(corpo$molt)) -> corpo$molt
+as.integer(as.character(corpo$parasites)) -> corpo$parasites
+as.integer(as.character(corpo$fat)) -> corpo$fat
+corpo$season <- factor(corpo$season, c("Winter", "Spring"))
+corpo$age <- factor(corpo$age, c("A", "J"))
+corpo$sex <- factor(corpo$sex, c("M", "F"))
+corpo$molt <- factor(corpo$molt, c("No","Yes"))
+str(corpo)
+
+```
+
+Hay algunos pocos na´s (individuos que se escaparon mientras eran manipulados), por lo que para poder utilizar todos los datos intento reemplazar esos na´s por la media de cada categoría.
+
+```{r reemplazo na´s, echo=T, eval=T, cache=TRUE}
+#reemplazo na por la media
+corpo$fat <- ifelse(is.na(corpo$fat), mean(corpo$fat, na.rm = TRUE), 
+                       corpo$fat)
+as.integer(as.character(corpo$fat)) -> corpo$fat
+str(corpo)
+```
+
+Debido a que capturé mas *Turdus rufiventris* y estos están mejor balanceados en todos los sitios y en todos los periodos que *Turdus chiguanco* (y con motivos de acortar un poco el trabajo), utilizo solo los individuos de *Turdus rufiventris*. 
+
+```{r subset, echo=T, eval=TRUE, cache=TRUE}
+#Filtro y guardo por especie
+tc <- subset(corpo, specie == "TC")
+tr <- subset(corpo, specie == "TR")
+```
+
+##Control y reducción de multicolinealidad con GGally
+
+```{r multicolinealidad, echo=T, eval=TRUE, cache=TRUE}
+#Controlo multicolinealidad con GGally
+library(GGally)
+ggcorr(tr, method = c("pairwise", "pearson"))
+
+```
+
+Acá obtengo el resultado obvio: el tarso derecho (tright) está muy relacionado con el tarso izquierdo (tleft). El resto tiene baja multicolinealidad, apenitas debajo de 0.5.   
+
+##Selección de variables mediante Lasso  
+Utilizo uno de los métodos visto en clase y cargo sus paquetes.
+
+```{r seleccion, echo=T, eval=TRUE, cache=TRUE}
+##Seleccion de modelos Shrinkage del LS con Lasso
+
+library(glmnet)
+x <- model.matrix(fat ~ site + season + tright + tleft +
+                    weight + parasites, data = tr, na.rm = F)[,-1]
+y <- tr$fat[0:82]
+
+lasso.mod <- glmnet(x, y, alpha = 1)
+plot(lasso.mod)
+coef(lasso.mod, s = 0.1) 
+
+# Cross validation.
+
+cv.out <- cv.glmnet(x, y, alpha = 1, nfolds = 10)
+plot(cv.out)
+
+cv.out$lambda.min
+coef(cv.out, s = "lambda.min")
+
+```
+
+El análisis del gráfico de lamba en función de MSE, arroja que el mejor modelo es aquel que tiene como variables Sitio + Periodo + tleft + Peso.
+
+##Modelo final
+
+Como tanto puntaje de grasa (1 a 5) y puntaje de músculo (1 a 3) son variables ordinales que tienen mas de 2 categorías, utilizo una regresión logistica ordinal para ajustar a mis datos datos. Utilizo la función polr() del paquete MASS. Además, extraigo valor p (para una mejor visualizacion los agrupo en una sola tabla), los intervalos de confianza y exponéncio los coeficientes para obtener los odd ratios y hacer una mejor interpretación.   
+
+Par una mejor interpretación de los resultados estimo las predicciones del modelo usando el paquete "effects"" por sitio y por periodo. Además, le pido que grafique las predicciones por sitio y periodo.
+
+                ###Grasa para TR
+```{r modelo grasa TR, echo=T, eval=TRUE, cache=TRUE}
+# Ajusto Regresiones logisticas para TR
+
+library(MASS)
+tr$fat <- as.factor(tr$fat)
+(trgresion <- polr(data = tr, formula = fat ~ site + season + weight + tleft, Hess = TRUE ))
+summary(trgresion)
+(ctable <- coef(summary(trgresion)))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2 
+(ctable <- cbind(ctable, "p value" = p))                                               
+(ci <- confint(trgresion))
+confint.default(trgresion)
+exp(cbind(OR = coef(trgresion), ci))
+###para ver las probabilidades de las predicciones en función de factores
+
+library(effects)
+library(car)
+(Effect(focal.predictors = c("site", "season"), trgresion))
+plot(Effect(focal.predictors = c("site", "season"), trgresion), rug = FALSE)
+
+```
+
+Para un alpha de 0,05 encontramos diferéncias significativas solo para el factor sitio (p = 0.00335). El análisis global de los coeficientes de la regresión logística indica que los individuos de *T.rufiventris* de los sitios no invadidos tiene una probabilidad 0.22 veces (1/Odd ratio) mayor de tener un mayor puntaje de grasa que los individuos de los sitios invadidos por *P. angustifolia*.
+El analisis de las predicciones en función de cada puntaje por sitio arroja que el modelo espera mayores probabilidades de que los individuos de sitios invadidos tengan un puntaje de acumulación de grasa entre 1 y 0, a diferéncia de los individuos en sitios no invadidos donde el modelo predice que la mayoría tendrán 1 .
+
+###Gráfico final para Grasa
+
+Utilizo el paquete GGplot para hacer un gráfico agradable para sitio.
+
+```{r gráfico grasa, echo=T, eval=T, cache=T}
+#Grafico
+tr$fat <- as.integer(tr$fat)
+library(ggplot2)
+
+  #Grafico por sitio
+  ggplot(data = tr) + geom_point(aes(x = site, y = fat), 
+                               position = "jitter", color = "blue") + 
+  geom_boxplot (aes(x = site, y = fat), color = "black") +
+  ggtitle("Fat score by Site", subtitle = "Turdus rufiventris") + 
+  xlab("Site") + ylab("Fat score")
+
+```
+
+###Músculo para TR
+
+Repito los mismos análisis descriptos más arriba pero ahora para puntaje de músculo como variable dependiente.   
+
+##Selección de variables mediante Lasso
+
+```{r selección modelo músculo, echo=T, eval=T}
+#Selección de modelo Lasso Shrinkage
+  
+  library(glmnet)
+  x <- model.matrix(muscle ~ site + season  + tright + tleft +
+                      weight + parasites, data = tc, na.rm = F)[,-1]
+  y <- tc$muscle[0:59]
+  
+  lasso.mod <- glmnet(x, y, alpha = 1)
+  plot(lasso.mod)
+  coef(lasso.mod, s = 0.1) 
+  
+  # Cross validation.
+  
+  cv.out <- cv.glmnet(x, y, alpha = 1, nfolds = 10)
+  plot(cv.out)
+  
+  cv.out$lambda.min
+  coef(cv.out, s = "lambda.min")
+
+```
+
+##Modelo final
+Para realizar el modelado final tuve en cuenta además del lambda mínimo el minimizar el AIC del modelo seleccionado.
+
+```{r modelado Lasso, echo=T, eval=T, cache=T}
+# Ajusto Regresiones logisticas para TR
+
+library(MASS)
+tr$muscle <- as.factor(tr$muscle)
+(trmodelo <- polr(data = tr, formula =  muscle ~ site + season + weight, Hess = TRUE ))
+summary(trmodelo)
+(ctable <- coef(summary(trmodelo)))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2 
+(ctable <- cbind(ctable, "p value" = p))                                               
+(ci <- confint(trmodelo))
+confint.default(trmodelo)
+exp(cbind(OR = coef(trmodelo), ci))
+###para ver las probabilidades de las predicciones en función de factores
+
+library(effects)
+library(car)
+(Effect(focal.predictors = c("site", "season"), trmodelo))
+plot(Effect(focal.predictors = c("site", "season"), trmodelo), rug = FALSE)
+
+```
+
+En la variable músculo, encontramos diferéncia significativas para los factores sitio (p = 0.008) y periodo (p= 0.016) para un alpha de 0.05.
+Un análisis global arroja que los individuos de sitios no invadidos tienen un probabilidad 3.41 veces (1/Odd ratio) mayor de tener menor un puntaje de desarrollo pectoral que los los individuos de sitios invadidos. Además, los individuos durante la Primavera tiene 3.12 veces mas chance de tener menor puntaje de músculo pectoral que los individuos durante el Invierno.   
+El análisis detallado de las predicciones de nuestro modelo por puntaje nos arroja que durante el Invierno los individuos de sitios Invadidos tendrán mejor puntaje corporal (3) que los individuos de sitios no invadidos (2). Durante la Pirmavera esta tendencia se agudiza, ya que los individuos de sitios no invadidos tendrán puntajes mucho menores (1) que durante el Invierno y que los individuos de sitios invadidos (3)
+
+###Gráfico final para Músculo
+
+Utilizo el paquete GGplot para hacer un gráfico agradable para periodo y para sitio.   
+
+```{r gráfico final músculo}
+#Grafico
+tr$muscle <- as.integer(tr$muscle)
+library(ggplot2)
+ggplot(data = tr) + geom_point(aes(x = season, y = muscle), 
+                                 position = "jitter", color = "blue") + 
+    geom_boxplot (aes(x = season, y = muscle), color = "black") +
+    facet_wrap( site ~ ., ncol = 2 ) +
+    ggtitle("Muscle score by Site and Season", subtitle = "Turdus rufiventris") + 
+    xlab("Season") + ylab("Muscle score")
+#Grafico por sitio
+ggplot(data = tr) + geom_point(aes(x = site, y = muscle), 
+                                 position = "jitter", color = "blue") + 
+    geom_boxplot (aes(x = site, y = muscle), color = "black") +
+    ggtitle("Muscle score by Site", subtitle = "Turdus rufiventris") + 
+    xlab("Site") + ylab("Muscle score")
+```
+
+
+##Conclusión final   
+
+La evidencia indica que los individuos de T. rufiventris responden diferencialmente a las condiciones del sitio y el periodo de captura.
+La variable músculo mostró indicios que marcarían una disminucion en el puntaje asignado de desarrollo del músculo en sitios no invadidos. Esta tendencia se agudiza aún más durante la Primavera.   
+En nuestra muestra la variable acumulación de grasa solo dió diferencias significativas para el sitio, donde los individuos de los sitios invadidos tuvieron una ligera tendéncia a una mayor acumulacion de grasa que los individuos de sitios invadidos.   
+Es presumible que exiten fisiológicas (niveles de lipidos en sangre) y comportamentales (shifting de composición de dieta por falta de frutos) que podrian explicar estos resultados.   
+No encontramos evidencia que sugiera que el nivel de ectoparásitos y el peso cambien con las condiciones del sitio.   
+Further research is needed.
+
+![Gracias! - Sitio no invadido Invierno](C:\Users\Mitocondria asesina\Documents\cursoR-master\final.jpg)
