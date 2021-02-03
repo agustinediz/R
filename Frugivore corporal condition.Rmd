@@ -1,5 +1,5 @@
 ---
-title: "Proyecto final curso lenguaje R 2020 "
+title: "Corporal condition of a frugivore bird in a context of invasion by an exotic plant "
 author: "Agustín Díaz"
 
 output: html_document
@@ -84,7 +84,7 @@ ggcorr(tr, method = c("pairwise", "pearson"))
 Acá obtengo el resultado obvio: el tarso derecho (tright) está muy relacionado con el tarso izquierdo (tleft). El resto tiene baja multicolinealidad, apenitas debajo de 0.5.   
 
 ##Selección de variables mediante Lasso  
-Utilizo uno de los métodos visto en clase y cargo sus paquetes.
+Utilizo uno de los métodos visto y cargo sus paquetes.
 
 ```{r seleccion, echo=T, eval=TRUE, cache=TRUE}
 ##Seleccion de modelos Shrinkage del LS con Lasso
@@ -245,7 +245,7 @@ ggplot(data = tr) + geom_point(aes(x = site, y = muscle),
 La evidencia indica que los individuos de T. rufiventris responden diferencialmente a las condiciones del sitio y el periodo de captura.
 La variable músculo mostró indicios que marcarían una disminucion en el puntaje asignado de desarrollo del músculo en sitios no invadidos. Esta tendencia se agudiza aún más durante la Primavera.   
 En nuestra muestra la variable acumulación de grasa solo dió diferencias significativas para el sitio, donde los individuos de los sitios invadidos tuvieron una ligera tendéncia a una mayor acumulacion de grasa que los individuos de sitios invadidos.   
-Es presumible que exiten fisiológicas (niveles de lipidos en sangre) y comportamentales (shifting de composición de dieta por falta de frutos) que podrian explicar estos resultados.   
+Es presumible que existen diferèncias fisiológicas (niveles de lipidos en sangre) y comportamentales (shifting de composición de dieta por falta de frutos) que podrian explicar estos resultados.   
 No encontramos evidencia que sugiera que el nivel de ectoparásitos y el peso cambien con las condiciones del sitio.   
 Further research is needed.
 
