@@ -1,3 +1,3 @@
 # R
 
-different projects and minicodes created in R.
+different projects and functions coded in R.
