@@ -1,3 +1,3 @@
 # R
 
-different projects and functions coded in R.
+Projects and functions coded in R.
